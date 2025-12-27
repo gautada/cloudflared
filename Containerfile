@@ -1,9 +1,17 @@
 ARG ALPINE_VERSION=3.22
+
+FROM docker.io/gautada/alpine:$ALPINE_VERSION as BUILD
+ 
+ARG GITHUB_TAG=2025.11.1
+WORKDIR /opt
+RUN git clone --branch ${GITHUB_TAG} https://github.com/cloudflare/cloudflared
+WORKDIR /opt/cloudflared
+RUN apk add make go \
+ && make cloudflared
+
 FROM docker.io/gautada/alpine:$ALPINE_VERSION as CONTAINER
 
 ARG IMAGE_NAME=cloudflared
-ARG IMAGE_VERSION=0.11.5
-ARG PACKAGE_VERSION=r0
 
 # ╭――――――――――――――――――――╮
 # │ METADATA           │
@@ -25,38 +33,10 @@ RUN /usr/sbin/usermod -l $USER alpine \
 && /bin/echo "$USER:$USER" | /usr/sbin/chpasswd 
 
 # ╭――――――――――――――――――――╮
-# │ BACKUP             │
-# ╰――――――――――――――――――――╯
-# COPY backup /etc/container/backup
-
-# ╭――――――――――――――――――――╮
-# │ ENTRYPOINT         │
-# ╰――――――――――――――――――――╯
-# Overwrite upstream entrypoint
-# COPY entrypoint.sh /usr/bin/container-entrypoint
-
-# ╭――――――――――――――――――――╮
-# │ PRIVILEGES         │
-# ╰――――――――――――――――――――╯
-# COPY privileges /etc/container/privileges
-
-# ╭――――――――――――――――――――╮
-# │ APPLICATION        │
-# ╰――――――――――――――――――――╯
-COPY cloudflared-run /etc/services.d/cloudflared/run
-RUN /bin/sed -i 's|dl-cdn.alpinelinux.org/alpine/|mirror.math.princeton.edu/pub/alpinelinux/|g' /etc/apk/repositories \
- && /sbin/apk add --no-cache cloudflared \
- && chmod +x /etc/services.d/cloudflared/run
-
-# ╭――――――――――――――――――――╮
 # │ CONTAINER          │
 # ╰――――――――――――――――――――╯
-# USER $USER
-VOLUME /mnt/volumes/backup
-VOLUME /mnt/volumes/configmaps
-VOLUME /mnt/volumes/data
-VOLUME /mnt/volumes/secrets
-EXPOSE 6074/tcp
+COPY --from=BUILD /opt/cloudflared/cloudflared /usr/sbin/cloudflared
+COPY cloudflared.s6 /etc/services.d/cloudflared/run
+COPY cert.pem /home/${USER}/.cloudflared/cert.pem
+RUN chown ${USER}:${USER} -R /home/${USER}
 WORKDIR /home/$USER
-
-ENTRYPOINT ["/usr/bin/s6-svscan", "/etc/services.d"]
