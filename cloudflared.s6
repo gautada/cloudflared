@@ -11,9 +11,25 @@ if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
   fi
 fi
 
-if [[ -n "${CLOUDFLARED_TUNNELS}" ]] ; then
+# if [[ -n "${CLOUDFLARED_TUNNELS}" ]] ; then
+#   echo "Starting 'cloudflared' as tunnel client(enter)"
+#   for tunnel in ${(s:,:)CLOUDFLARED_TUNNELS}; do
+#     # Trim whitespace
+#     tunnel="${tunnel//[[:space:]]/}"
+#     # Skip empty entries
+#     [[ -z "$tunnel" ]] && continue
+#     host="${tunnel%%:*}"
+#     port="${tunnel##*:}"
+#     echo "- Access: ${host} on port ${port}"
+#     su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://0.0.0.0:${port} &"
+#   done
+#   if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
+#     tail -f /dev/null # Block to keep open
+#   fi
+# fi
+
+if [[ -n "${CLOUDFLARED_TUNNEL}" ]] ; then
   echo "Starting 'cloudflared' as tunnel client(enter)"
-  for tunnel in ${(s:,:)CLOUDFLARED_TUNNELS}; do
     # Trim whitespace
     tunnel="${tunnel//[[:space:]]/}"
     # Skip empty entries
@@ -21,11 +37,7 @@ if [[ -n "${CLOUDFLARED_TUNNELS}" ]] ; then
     host="${tunnel%%:*}"
     port="${tunnel##*:}"
     echo "- Access: ${host} on port ${port}"
-    su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://0.0.0.0:${port} 1>&1 2>&2 &"
-  done
-  if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
-    tail -f /dev/null # Block to keep open
-  fi
+    su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://0.0.0.0:${port}"
 fi
 
 if [[ -n "${CLOUDFLARED_TOKEN}" ]] ; then
