@@ -31,7 +31,7 @@ fi
 if [[ -n "${CLOUDFLARED_TUNNEL}" ]] ; then
   echo "Starting 'cloudflared' as tunnel client(enter)"
     # Trim whitespace
-    tunnel="${tunnel//[[:space:]]/}"
+    tunnel="${CLOUDFLARED_TUNNEL//[[:space:]]/}"
     # Skip empty entries
     [[ -z "$tunnel" ]] && continue
     host="${tunnel%%:*}"
