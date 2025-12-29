@@ -8,20 +8,27 @@ if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
     echo "'CLOUDFLARED_TUNNELS' environment variable not set: Bypass Client"
     sleep 60
     exit 99
-  else # Try to start clients
-    echo "Starting 'cloudflared' as tunnel client(enter)"
-    for tunnel in ${(s:,:)CLOUDFLARED_TUNNELS}; do
-      # Trim whitespace
-      tunnel="${tunnel//[[:space:]]/}"
-      # Skip empty entries
-      [[ -z "$tunnel" ]] && continue
-      host="${tunnel%%:*}"
-      port="${tunnel##*:}"
-      echo "- Access: ${host} on port ${port}"
-      su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://localhost:${port} &"
-    done
   fi
-else # Try to start server
+fi
+
+if [[ -n "${CLOUDFLARED_TUNNELS}" ]] ; then
+  echo "Starting 'cloudflared' as tunnel client(enter)"
+  for tunnel in ${(s:,:)CLOUDFLARED_TUNNELS}; do
+    # Trim whitespace
+    tunnel="${tunnel//[[:space:]]/}"
+    # Skip empty entries
+    [[ -z "$tunnel" ]] && continue
+    host="${tunnel%%:*}"
+    port="${tunnel##*:}"
+    echo "- Access: ${host} on port ${port}"
+    su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://localhost:${port} &"
+    if [[ -n "${CLOUDFLARED_TOKEN}" ]] ; then
+      tail -f /dev/null # Block to keep open
+    fi
+  done
+fi
+
+if [[ -n "${CLOUDFLARED_TOKEN}" ]] ; then
   echo "Starting 'cloudflared' as tunnel server(exit)"
   su cloudflared -c "cloudflared tunnel run --token ${CLOUDFLARED_TOKEN}"
 fi
