@@ -54,3 +54,9 @@ Modify the deployment's yaml config to add the environment variable
                   key: TOKEN
 
 ```
+
+## Access
+
+```zsh
+cloudflared access tcp --hostname pods.gautier.org --url tcp://localhost:2375
+```

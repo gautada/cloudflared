@@ -40,6 +40,5 @@ RUN mkdir -p /home/${USER}/.cloudflared \
  && ln -fsv /mnt/volumes/secrets/cert.pem /home/${USER}/.cloudflared/cert.pem
 COPY --from=BUILD /opt/cloudflared/cloudflared /usr/sbin/cloudflared
 COPY cloudflared.s6 /etc/services.d/cloudflared/run
-# COPY cert.pem /home/${USER}/.cloudflared/cert.pem
 RUN chown ${USER}:${USER} -R /home/${USER} 
 WORKDIR /home/$USER

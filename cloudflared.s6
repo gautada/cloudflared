@@ -1,9 +1,28 @@
-#!/bin/sh
+#!/usr/bin/env zsh
 
 set -e
 
-echo "Starting 'cloudflared' as tunnel server"
-# sysctl -w net.ipv4.ping_group_range="1001 1001" 
-# sysctl -w 
-su cloudflared -c "cloudflared tunnel run --token ${CLOUDFLARED_TOKEN}"
+if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
+  echo "'CLOUDFLARED_TOKEN' environment variable not set: Bypass Server"
+  if [[ -z "${CLOUDFLARED_TUNNELS}" ]] ; then
+    echo "'CLOUDFLARED_TUNNELS' environment variable not set: Bypass Client"
+    sleep 60
+    exit 99
+  else # Try to start clients
+    echo "Starting 'cloudflared' as tunnel client(enter)"
+    for tunnel in ${(s:,:)CLOUDFLARED_TUNNELS}; do
+      # Trim whitespace
+      tunnel="${tunnel//[[:space:]]/}"
+      # Skip empty entries
+      [[ -z "$tunnel" ]] && continue
+      host="${tunnel%%:*}"
+      port="${tunnel##*:}"
+      echo "- Access: ${host} on port ${port}"
+      su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://0.0.0.0:${port} &"
+    done
+  fi
+else # Try to start server
+  echo "Starting 'cloudflared' as tunnel server(exit)"
+  su cloudflared -c "cloudflared tunnel run --token ${CLOUDFLARED_TOKEN}"
+fi
 
