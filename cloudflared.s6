@@ -3,7 +3,7 @@
 set -e
 
 echo "Starting 'cloudflared' as tunnel server"
-sysctl -w net.ipv4.ping_group_range="1001 1001" 
-sysctl -w 
+# sysctl -w net.ipv4.ping_group_range="1001 1001" 
+# sysctl -w 
 su cloudflared -c "cloudflared tunnel run --token ${CLOUDFLARED_TOKEN}"
 
