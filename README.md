@@ -108,7 +108,5 @@ container system start
 container run --detach --name cloudflared --rm docker.io/gautada/cloudflared:dev
 ```
 
-**Note:** You can use the an environment file to povide the 
+**Note:** You can use the an environment file to povide the
 `CLOUDFLARED_TUNNELS` to `container` via the `--env-file` parameter.
-
-
