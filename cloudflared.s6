@@ -4,7 +4,7 @@ set -e
 
 if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
   echo "'CLOUDFLARED_TOKEN' environment variable not set: Bypass Server"
-  if [[ -z "${CLOUDFLARED_TUNNELS}" ]] ; then
+  if [[ -z "${CLOUDFLARED_TUNNEL}" ]] ; then
     echo "'CLOUDFLARED_TUNNELS' environment variable not set: Bypass Client"
     sleep 60
     exit 99
