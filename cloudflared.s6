@@ -22,10 +22,10 @@ if [[ -n "${CLOUDFLARED_TUNNELS}" ]] ; then
     port="${tunnel##*:}"
     echo "- Access: ${host} on port ${port}"
     su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://localhost:${port} &"
-    if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
-      tail -f /dev/null # Block to keep open
-    fi
   done
+  if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
+    tail -f /dev/null # Block to keep open
+  fi
 fi
 
 if [[ -n "${CLOUDFLARED_TOKEN}" ]] ; then
