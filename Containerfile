@@ -6,7 +6,7 @@ ARG GITHUB_TAG=2025.11.1
 WORKDIR /opt
 RUN git clone --branch ${GITHUB_TAG} https://github.com/cloudflare/cloudflared
 WORKDIR /opt/cloudflared
-RUN apk add make go \
+RUN apk add --no-cache make go \
  && make cloudflared
 
 FROM docker.io/gautada/alpine:$ALPINE_VERSION as CONTAINER

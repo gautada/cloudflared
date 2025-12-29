@@ -7,7 +7,7 @@ A basic cloudeflare tunnel daemon
 
 [Docker Container](https://hub.docker.com/r/cloudflare/cloudflared)
 [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/)
-[Github](https://github.com/cloudflare/cloudflared)
+[GitHub](https://github.com/cloudflare/cloudflared)
 
 
 ## Setup
@@ -15,7 +15,7 @@ A basic cloudeflare tunnel daemon
 ### Secure Token
 
 To setup you need to provide the secure token.  The token can be generated
-via the cloudflare website (Cloudflare > ZeroTrust > Networks > Connectors >
+via the cloudflare site (Cloudflare > ZeroTrust > Networks > Connectors >
 {tunnel} > Configure > Refresh Token).  This token must be provided to the
 container as an environment variable with the name `CLOUDFLARED_TOKEN`.
 
@@ -28,7 +28,7 @@ and the cert file will be at `~/.cloudflared/cert.pem`.
 cloudflared login
 ```
 
-#### Command Line
+#### Command-line
 
 You can use the `.env` file to povide the variable to `podman run` and the
 `--env-file` parameter.
