@@ -18,7 +18,7 @@ if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
       host="${tunnel%%:*}"
       port="${tunnel##*:}"
       echo "- Access: ${host} on port ${port}"
-      su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://0.0.0.0:${port} &"
+      su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://localhost:${port} &"
     done
   fi
 else # Try to start server
