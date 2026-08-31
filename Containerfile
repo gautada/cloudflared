@@ -6,7 +6,7 @@ FROM docker.io/gautada/debian:$DEBIAN_VERSION as BUILD
 RUN apt-get update \
  && apt-get upgrade --yes \
  && apt-get install --yes --no-install-recommends \
-            make git go \
+            make git golang-go \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/* 
 # Cloudflare Tunnel client: https://github.com/cloudflare/cloudflared
