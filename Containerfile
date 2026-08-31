@@ -2,13 +2,19 @@ ARG DEBIAN_VERSION=13.6
 
 FROM docker.io/gautada/debian:$DEBIAN_VERSION as BUILD
 
+# hadolint ignore=DL3008
+RUN apt-get update \
+ && apt-get upgrade --yes \
+ && apt-get install --yes --no-install-recommends \
+            make git go \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* 
 # Cloudflare Tunnel client: https://github.com/cloudflare/cloudflared
 ARG GITHUB_TAG=2026.8.3
 WORKDIR /opt
 RUN git clone --branch ${GITHUB_TAG} https://github.com/cloudflare/cloudflared
 WORKDIR /opt/cloudflared
-RUN apk add --no-cache make go \
- && make cloudflared
+RUN make cloudflared
 
 FROM docker.io/gautada/debian:$DEBIAN_VERSION as CONTAINER
 
