@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Print only the installed cloudflared version
+cloudflared version | awk '{print $3}'

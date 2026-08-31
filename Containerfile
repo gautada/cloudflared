@@ -42,6 +42,7 @@ RUN /usr/sbin/usermod -l $USER $OLDUSER \
 RUN mkdir -p /home/${USER}/.cloudflared \
  && ln -fsv /mnt/volumes/secrets/cert.pem /home/${USER}/.cloudflared/cert.pem
 COPY --from=BUILD /opt/cloudflared/cloudflared /usr/sbin/cloudflared
-COPY cloudflared.s6 /etc/services.d/cloudflared/run
+COPY etc/services.d/cloudflared/run /etc/services.d/cloudflared/run
+COPY usr/bin/container-version /usr/bin/container-version
 RUN chown ${USER}:${USER} -R /home/${USER} 
 WORKDIR /home/$USER
