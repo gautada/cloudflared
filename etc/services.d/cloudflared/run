@@ -1,47 +1,29 @@
-#!/usr/bin/env zsh
+#!/bin/sh
 
 set -e
 
-if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
+if [ -z "${CLOUDFLARED_TOKEN}" ]; then
   echo "'CLOUDFLARED_TOKEN' environment variable not set: Bypass Server"
-  if [[ -z "${CLOUDFLARED_TUNNEL}" ]] ; then
+  if [ -z "${CLOUDFLARED_TUNNEL}" ]; then
     echo "'CLOUDFLARED_TUNNELS' environment variable not set: Bypass Client"
     sleep 60
     exit 99
   fi
 fi
 
-# if [[ -n "${CLOUDFLARED_TUNNELS}" ]] ; then
-#   echo "Starting 'cloudflared' as tunnel client(enter)"
-#   for tunnel in ${(s:,:)CLOUDFLARED_TUNNELS}; do
-#     # Trim whitespace
-#     tunnel="${tunnel//[[:space:]]/}"
-#     # Skip empty entries
-#     [[ -z "$tunnel" ]] && continue
-#     host="${tunnel%%:*}"
-#     port="${tunnel##*:}"
-#     echo "- Access: ${host} on port ${port}"
-#     su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://0.0.0.0:${port} &"
-#   done
-#   if [[ -z "${CLOUDFLARED_TOKEN}" ]] ; then
-#     tail -f /dev/null # Block to keep open
-#   fi
-# fi
-
-if [[ -n "${CLOUDFLARED_TUNNEL}" ]] ; then
+if [ -n "${CLOUDFLARED_TUNNEL}" ]; then
   echo "Starting 'cloudflared' as tunnel client(enter)"
-    # Trim whitespace
-    tunnel="${CLOUDFLARED_TUNNEL//[[:space:]]/}"
-    # Skip empty entries
-    [[ -z "$tunnel" ]] && continue
+  # Trim whitespace (POSIX-safe -- bash's ${VAR//pattern/repl} isn't available in /bin/sh)
+  tunnel=$(echo "${CLOUDFLARED_TUNNEL}" | tr -d '[:space:]')
+  if [ -n "$tunnel" ]; then
     host="${tunnel%%:*}"
     port="${tunnel##*:}"
     echo "- Access: ${host} on port ${port}"
     su cloudflared -c "cloudflared access tcp --hostname ${host} --url tcp://0.0.0.0:${port}"
+  fi
 fi
 
-if [[ -n "${CLOUDFLARED_TOKEN}" ]] ; then
+if [ -n "${CLOUDFLARED_TOKEN}" ]; then
   echo "Starting 'cloudflared' as tunnel server(exit)"
   su cloudflared -c "cloudflared tunnel run --token ${CLOUDFLARED_TOKEN}"
 fi
-
