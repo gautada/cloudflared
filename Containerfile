@@ -31,6 +31,15 @@ LABEL org.opencontainers.image.version="${IMAGE_VERSION}"
 LABEL org.opencontainers.image.license="Upstream"
 
 # ╭――――――――――――――――――――╮
+# │ PACKAGES           │
+# ╰――――――――――――――――――――╯
+RUN apt-get update \
+&& apt-get upgrade --yes \
+&& apt-get install --yes --no-install-recommends \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* 
+
+# ╭――――――――――――――――――――╮
 # │ USER               │
 # ╰――――――――――――――――――――╯
 ARG OLDUSER=debian
