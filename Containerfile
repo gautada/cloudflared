@@ -1,9 +1,24 @@
-ARG ALPINE_VERSION=3.22
-FROM docker.io/gautada/alpine:$ALPINE_VERSION as CONTAINER
+ARG DEBIAN_VERSION=13.6
+
+FROM docker.io/gautada/debian:$DEBIAN_VERSION as BUILD
+
+# hadolint ignore=DL3008
+RUN apt-get update \
+ && apt-get upgrade --yes \
+ && apt-get install --yes --no-install-recommends \
+            make git golang-go \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* 
+# Cloudflare Tunnel client: https://github.com/cloudflare/cloudflared
+ARG GITHUB_TAG=2026.8.3
+WORKDIR /opt
+RUN git clone --branch ${GITHUB_TAG} https://github.com/cloudflare/cloudflared
+WORKDIR /opt/cloudflared
+RUN make cloudflared
+
+FROM docker.io/gautada/debian:$DEBIAN_VERSION as CONTAINER
 
 ARG IMAGE_NAME=cloudflared
-ARG IMAGE_VERSION=0.11.5
-ARG PACKAGE_VERSION=r0
 
 # ╭――――――――――――――――――――╮
 # │ METADATA           │
@@ -16,47 +31,33 @@ LABEL org.opencontainers.image.version="${IMAGE_VERSION}"
 LABEL org.opencontainers.image.license="Upstream"
 
 # ╭――――――――――――――――――――╮
+# │ PACKAGES           │
+# ╰――――――――――――――――――――╯
+RUN apt-get update \
+&& apt-get upgrade --yes \
+&& apt-get install --yes --no-install-recommends \
+&& apt-get clean \
+&& rm -rf /var/lib/apt/lists/* 
+
+# ╭――――――――――――――――――――╮
 # │ USER               │
 # ╰――――――――――――――――――――╯
+ARG OLDUSER=debian
 ARG USER=cloudflared
-RUN /usr/sbin/usermod -l $USER alpine \
-&& /usr/sbin/usermod -d /home/$USER -m $USER \ 
-&& /usr/sbin/groupmod -n $USER alpine \
-&& /bin/echo "$USER:$USER" | /usr/sbin/chpasswd 
+RUN /usr/sbin/usermod -l $USER $OLDUSER \
+ && /usr/sbin/usermod -d /home/$USER -m $USER \
+ && /usr/sbin/groupmod -n $USER $OLDUSER \
+ && PASSWORD="$(openssl rand -base64 32 | tr -dc 'A-Za-z0-9' | head -c 24)" \
+ && printf '%s:%s\n' "$USER" "$PASSWORD" | /usr/sbin/chpasswd
 
-# ╭――――――――――――――――――――╮
-# │ BACKUP             │
-# ╰――――――――――――――――――――╯
-# COPY backup /etc/container/backup
-
-# ╭――――――――――――――――――――╮
-# │ ENTRYPOINT         │
-# ╰――――――――――――――――――――╯
-# Overwrite upstream entrypoint
-# COPY entrypoint.sh /usr/bin/container-entrypoint
-
-# ╭――――――――――――――――――――╮
-# │ PRIVILEGES         │
-# ╰――――――――――――――――――――╯
-# COPY privileges /etc/container/privileges
-
-# ╭――――――――――――――――――――╮
-# │ APPLICATION        │
-# ╰――――――――――――――――――――╯
-COPY cloudflared-run /etc/services.d/cloudflared/run
-RUN /bin/sed -i 's|dl-cdn.alpinelinux.org/alpine/|mirror.math.princeton.edu/pub/alpinelinux/|g' /etc/apk/repositories \
- && /sbin/apk add --no-cache cloudflared \
- && chmod +x /etc/services.d/cloudflared/run
 
 # ╭――――――――――――――――――――╮
 # │ CONTAINER          │
 # ╰――――――――――――――――――――╯
-# USER $USER
-VOLUME /mnt/volumes/backup
-VOLUME /mnt/volumes/configmaps
-VOLUME /mnt/volumes/data
-VOLUME /mnt/volumes/secrets
-EXPOSE 6074/tcp
+RUN mkdir -p /home/${USER}/.cloudflared \
+ && ln -fsv /mnt/volumes/secrets/cert.pem /home/${USER}/.cloudflared/cert.pem
+COPY --from=BUILD /opt/cloudflared/cloudflared /usr/sbin/cloudflared
+COPY etc/services.d/cloudflared/run /etc/services.d/cloudflared/run
+COPY usr/bin/container-version /usr/bin/container-version
+RUN chown ${USER}:${USER} -R /home/${USER} 
 WORKDIR /home/$USER
-
-ENTRYPOINT ["/usr/bin/s6-svscan", "/etc/services.d"]
