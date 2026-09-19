@@ -2,6 +2,31 @@
 
 set -e
 
+# ╭――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――╮
+# │ cloudflared run modes (checked in this precedence order)   │
+# ├――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――┤
+# │ 1. Locally-managed server  -> a config file is present.    │
+# │      GitOps-friendly: ingress rules + warp-routing live in │
+# │      the config file (a k8s ConfigMap). Requires a tunnel  │
+# │      credentials file referenced by the config's           │
+# │      `credentials-file:` key.                              │
+# │ 2. Remotely-managed server -> $CLOUDFLARED_TOKEN is set.   │
+# │      Legacy/dashboard-managed: ingress + routes live in    │
+# │      the Cloudflare Zero Trust dashboard, not in git.      │
+# │ 3. Access client (exit)    -> $CLOUDFLARED_TUNNEL is set.  │
+# │      `cloudflared access tcp` to reach a remote hostname.  │
+# ╰――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――╯
+
+# Locally-managed config file. Override the path with $CLOUDFLARED_CONFIG.
+CONFIG="${CLOUDFLARED_CONFIG:-/etc/cloudflared/config.yaml}"
+
+# 1. Locally-managed server (config file present) -- takes precedence.
+if [ -f "${CONFIG}" ]; then
+  echo "Starting 'cloudflared' as tunnel server (locally-managed, config=${CONFIG})"
+  su cloudflared -c "cloudflared tunnel --config ${CONFIG} run"
+  exit $?
+fi
+
 if [ -z "${CLOUDFLARED_TOKEN}" ]; then
   echo "'CLOUDFLARED_TOKEN' environment variable not set: Bypass Server"
   if [ -z "${CLOUDFLARED_TUNNEL}" ]; then
@@ -11,6 +36,7 @@ if [ -z "${CLOUDFLARED_TOKEN}" ]; then
   fi
 fi
 
+# 3. Access client (exit).
 if [ -n "${CLOUDFLARED_TUNNEL}" ]; then
   echo "Starting 'cloudflared' as tunnel client(enter)"
   # Trim whitespace (POSIX-safe -- bash's ${VAR//pattern/repl} isn't available in /bin/sh)
@@ -23,6 +49,7 @@ if [ -n "${CLOUDFLARED_TUNNEL}" ]; then
   fi
 fi
 
+# 2. Remotely-managed server (token).
 if [ -n "${CLOUDFLARED_TOKEN}" ]; then
   echo "Starting 'cloudflared' as tunnel server(exit)"
   su cloudflared -c "cloudflared tunnel run --token ${CLOUDFLARED_TOKEN}"
