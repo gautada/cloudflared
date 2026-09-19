@@ -79,6 +79,67 @@ Mount the secret as a volume in the deplyment yaml (yaml path:
                 path: cert.pem
 ```
 
+### Server (exit) — locally-managed (config file, GitOps)
+
+Instead of a dashboard-managed token, the tunnel can run **locally-managed** from
+a config file. Ingress rules and `warp-routing` then live in git (a Kubernetes
+ConfigMap) instead of the Cloudflare dashboard. This mode takes precedence: if a
+config file is found the container runs it and ignores `CLOUDFLARED_TOKEN`.
+
+The container looks for the config at `/etc/cloudflared/config.yaml` (override
+with `CLOUDFLARED_CONFIG`). It runs:
+
+```zsh
+cloudflared tunnel --config /etc/cloudflared/config.yaml run
+```
+
+The config references a **tunnel credentials file** (the connector's secret,
+distinct from `cert.pem`). Provide it via the mounted secret and point
+`credentials-file:` at it. Example `config.yaml`:
+
+```yaml
+tunnel: <TUNNEL-UUID>
+credentials-file: /mnt/volumes/secrets/credentials.json
+no-autoupdate: true
+warp-routing:
+  enabled: true          # required for WARP private-network (CIDR) routes
+ingress:
+  - hostname: example.gautier.org
+    service: http://svc.namespace.svc.cluster.local:8080
+  - service: http_status:404   # required catch-all (must be last)
+```
+
+> Note: `warp-routing.enabled` turns the feature on, but the private **CIDR
+> routes** (`cloudflared tunnel route ip add <CIDR> <tunnel>`) and public
+> **DNS records** (`cloudflared tunnel route dns ...`) are stored in the
+> Cloudflare account, not the config file. Likewise Zero Trust resolver
+> policies, Split Tunnel, and device-enrollment policies remain account state.
+
+Kubernetes: add the credentials file to the `cloudflared` secret and mount the
+ConfigMap at `/etc/cloudflared`:
+
+```yaml
+          volumeMounts:
+            - name: config
+              mountPath: /etc/cloudflared
+              readOnly: true
+            - name: secrets
+              mountPath: /mnt/volumes/secrets
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: cloudflared-config
+        - name: secrets
+          secret:
+            secretName: cloudflared
+            items:
+              - key: cert.pem
+                path: cert.pem
+              - key: credentials.json
+                path: credentials.json
+```
+
 ### Client (enter)
 
 The cloudflared client is also designed to run a container but can be launched
